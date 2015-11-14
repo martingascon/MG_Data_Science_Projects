@@ -7,6 +7,7 @@ output: word_document
 # Introduction
 ### Motivation and Goals
 
+
 My idea was to compare the housing market with the stock market. If there is a correlation between them, I would like to know which index predicts better the Housing price and which cities are more correlated to those indexes. 
 
 Some of the various questions that I would like to answer include: 
