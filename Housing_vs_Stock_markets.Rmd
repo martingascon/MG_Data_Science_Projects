@@ -119,7 +119,7 @@ par(mar=c(5.1,4.1,4.1,2.1))
 plot(x,by_city["New York",], main="New York",type="l",col="black", lwd=2.5,
      xlab="years", ylab = "Mean property value ($/sq. ft.)")
 par(new=TRUE)
-plot(x,predict(loess(nasdaq_100~x)), type = "l", col="red", axes = FALSE, bty = "n", 
+plot(x,predict(loess(nasdaq~x)), type = "l", col="red", axes = FALSE, bty = "n", 
      xlab = "", ylab = "",lwd=2.5)
 legend("topleft", inset=0.01,c("Housing","NASDAQ"), col=c("black","red"),lwd=c(2.5,2.5),cex=0.7)
 axis(side=4, at = pretty(range(nasdaq),col="red",cx=0.4))
