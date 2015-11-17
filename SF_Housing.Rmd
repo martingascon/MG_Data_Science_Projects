@@ -2,7 +2,7 @@
 title: "San Francisco Housing Market"
 author: "Martin Gascon"
 date: "Jul 20, 2015"
-output: pdf_document
+output: word_document
 ---
 
 # "Can I predict if the price is going to rise?"
@@ -150,9 +150,9 @@ In this case, since 94107 is in the same region as 94110, there is a perfect cor
 
 ![Group by numbers](/home/martin/Dropbox/DS/DataIncubator/ch3/Rplot01_07_24.png)
 
-# Next Steps
+# Conclusions
 
-I’d like to perform more exploratory analysis to determine if this trend is similar for cities with a larger set of data.
+In terms of property price, there is a lag of a few months when there is a change of trend for neighborhoods that are less correlated to each other. This time difference could be profited from builders and real state companies to maximize the benefits.
 
  
 
