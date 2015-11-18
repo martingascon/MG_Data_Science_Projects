@@ -1,0 +1,319 @@
+---
+title: "How do changes in minimum wage affect unemployment?"
+author: "Martin Gascon"
+date: "11/11/2015"
+output: html_document
+---
+
+# *Index*
+### 1. *Introduction*
+- 1.1 Motivation and Goals 
+- 1.2 About the data
+
+### 2. *Analysis (not including GDP)*
+- 2.1 Exploratory analysis
+- 2.2 Data Processing/Results
+
+### 3. *Analysis (including GDP)*
+- 3.1 Exploratory analysis
+- 3.2 Data Processing/Results
+
+### 3. *Conclussions*
+### 4. *References*
+
+==========================================================
+
+# 1. Introduction
+
+## 1.1 Motivation and Goals
+
+I am interested in investigating whether there is a correlation between minimum wage and unemployment. This is a long standing hypothesis, exemplified by a recent article in "The Economist" [[1]](http://www.economist.com/blogs/economist-explains/2014/01/economist-explains-11), which cites some economists as being against the minimum wage rooted in the concern that wage floors reduce employment. The idea is that minimum wage forces firms to pay existing workers more and will therefore make those jobs uneconomical, leading to firing of workers [[2]](http://www.slate.com/articles/news_and_politics/politics/2015/04/the_fight_for_15_it_s_a_bad_idea_raising_the_minimum_wage_to_15_would_hurt.html).  Other sources suggests that a minimum-wage increase could have a small stimulating effect on the economy as low-wage workers spend their additional earnings, raising consumption which then stimulates job growth [[3]](http://www.huffingtonpost.com/bill-quigley/top-ten-arguments-for-rai_b_6879220.html).
+
+An important variable to consider when analyzing unemployment is that the state of the economy, as we have seen in the recession of 2007-2009, when the unemployment rate shot up to 10%. In the second part of this analysis, therefore,  I have taken into consideration the effect of gross domestic product (GDP) on unemployment in order to determine what the true relationship between minimum wage and employment is. 
+
+## 1.2 About the Data
+
+For this project, I have downloaded data from the US Department of Labor, which provides minimum wage [[4]](http://www.dol.gov/whd/state/stateMinWageHis.htm) and unemployment rate [[5]](http://www.bls.gov/lau/staadata.txt) data for every state from 1976 to 2014. I obtained inflation corrected GDP data from [[6]](http://www.multpl.com/us-real-gdp-growth-rate/table/by-year).
+
+# 2. Analysis not including GDP
+
+## 2.1 Exploratory analysis
+
+Initial exploratory analysis using R revealed that there is unemployment and minimum wage data for the majority of states for the majority of the years. 
+
+**A) Load Minimum Wage (MW) into a dataframe, put states as row names in order to have only numerical values. Removed extra characters from column names (years)**
+
+```{r}
+# set working Directory
+setwd('~/Dropbox/DS/Insight/Minimum_Wage/') 
+
+# read the Minimum wage from  (1976 to 2014) 
+mwage = read.table("./data/Minimum_Wage.csv", sep=",",head=TRUE)                            
+
+# federal + 47 states. (Discarded States with Mostly NA)
+rownames(mwage) <- mwage$State
+mwage[1]<-NULL
+colnames(mwage) <- sub("X", "\\2", colnames(mwage))
+```
+
+**B) Load Unemployment (UN) into a dataframe, establish states as rownames in order to have only numerical values. Remove extra characters from colnames (years). Also added an extra row with the federal average.** 
+
+```{r}
+## Unemployment rate in the range (1976 to 2014) 
+unem = read.csv("./data/Unemployment.csv", sep=" ",head=TRUE)     
+rownames(unem)<-unem$State
+colnames(unem) <- sub("X", "\\2", colnames(unem))
+unem[1]<-NULL
+
+# We dont have the average so let's add a row with the Federal average
+unem["Federal" ,] <- colSums(unem)/nrow(unem)
+```
+
+
+**C) We leave in each dataframe the states (alphabetically) and years that are common to both files. We finally have data for 44 States (+Federal) and 26 years from 1976 to 2014.**
+
+```{r}
+## We have Federal + 49 states and dates from (1976 to 2014). 
+# Let's select common states and years 
+states<-rownames(unem[rownames(unem) %in% rownames(mwage), ])
+years<-colnames(mwage[! colnames(mwage) %in% colnames(unem), ])
+unem<-unem[states,years]
+
+# Now let's remove the extra states from Minimum wage. 
+states2<-rownames(mwage[rownames(mwage) %in% rownames(unem), ])
+mwage<-mwage[states2,] 
+
+#Let's reorder mwage with the same order as unem (states alph. and Federal last)
+mwage<-mwage[match(rownames(unem),rownames(mwage)),]
+
+```
+
+### 2.2 Data Processing/Results
+
+After loading the data for minimum wage and unemployment, we plot the data for some selected states as examples. 
+
+```{r, echo=FALSE}
+#### let's plot the minimum wage for a few states compared to federal
+par(mfrow = c(1, 2))
+par(mar=c(5,4,4,2))
+
+stats<-c("Federal","California","Colorado","Idaho","Kansas","Texas")
+x<-as.numeric(colnames(mwage))
+y<-t(mwage[stats,])
+
+matplot(x,y, type="l", lwd=c(6,2,2,2,2,2), main = "Minimum wage",
+        xlab="year", ylab="Minimum Wage in U$S", axes = FALSE)
+axis(1, at = seq(1976, 2014, by = 1), cex=0.5)
+axis(2, at = seq(0, 15, by = 1))
+legend("topleft", inset=0.01, as.vector(rownames(mwage[stats,])), col=c(1:6),
+       lwd=c(5,2,2,2,2,2), cex=0.5)
+
+# We can observe higher and lower values compared to the federal value.
+##################################################################
+
+##### let's plot the unemployment rate for a few states
+
+par(mar=c(5,4,4,2))
+x2<-colnames(unem)
+y2<-t(unem[stats,])
+matplot(x2,y2,type="l", lwd=c(8,2,2,2,2,2), main = "Unemployment Rate",
+        xlab="year", ylab="Unemployment Rate (%)",axes=FALSE)
+axis(1, at = seq(1976, 2014, by = 1), cex=0.5)
+axis(2, at = seq(0, 15, by = 1))
+legend("topleft", inset=0.01, as.vector(rownames(unem[stats,])), col=c(1:6),
+       lwd=c(5,2,2,2,2,2,2,2), cex=0.5)
+
+# We see a few increases starting in 2001 and later in 2008 due two economical crisis
+
+```
+
+Conclusion: the minimum wage increases over time with some states having or lower rates than the federal minimum. The unemployment rate, on the other hand, fluctuates, probably in response to a number of variables, such as consumer sentiment, GDP, the state of global economy, etc.
+
+Next I was interested in finding out whether there is a correlation between the minimum wage and unemployment at the federal level.
+
+
+```{r, echo=FALSE}
+# Let's see if the federal unemployment is correlated with the federal minimum wage
+par(mfrow = c(1, 2))
+par(mar=c(5,4,4,4))
+Sta<-"Federal"
+
+y3<-t(unem[Sta,])
+y4<-t(mwage[Sta,])
+matplot(x2,y3, type="l", lwd=c(2),col=c(2), main = "U.S. (1976-2014)",
+        xlab="year", ylab="Unemployment Rate (%)",axes=FALSE)
+par(new=T)
+plot(x2,y4, type="l", col="blue", lwd=c(2),axes=FALSE,xlab="",ylab="")
+axis(1, at = seq(1976, 2016, by = 1),cex=0.7)
+axis(2, at = seq(0, 10, by = 1))
+axis(4, at = pretty(range(mwage[Sta,])), col="blue",col.lab="blue")
+legend("top", inset=0.01, as.vector(c("Unemployment","Minimum Wage")), col=c("red","blue"),
+       lwd=c(2,2))
+mtext("Minimum wage ($)", side=4, line=2, col="blue")
+
+cf<-cor(y3,y4)
+legend("topleft", inset=0.01,c(paste("R=",round(cf, digits=2))),cex=0.7)
+
+ 
+par(mar=c(5,4,4,4))
+
+cor_state<-rep(0, 45)
+for(i in 1:45) {
+  cor_state[i]<-cor(as.numeric(unem[i,]),as.numeric(mwage[i,]))
+}
+mean<-summary(cor_state)[4] 
+barplot(as.numeric(cor_state),xlab="State #",ylab="Correlation factor (R)", main="Correlation (44 states)")
+abline(h=mean, col="black",lwd=2)
+legend("topleft", inset=0.01,c(paste("R(Mean)=",round(mean, digits=2))), col=c(1),cex=0.7)
+```
+
+The correlation between the unemployment and minimum wage is 0.25 at the federal level but when we plot the correlation for every state individually, we don't see a clear trend since the mean is slightly above 0. If there were a correlation, the value would be closer to 1.
+
+# Analysis including GDP
+
+## 3.1 Exploratory analysis
+
+Since unemployment is strongly linked to the state of the economy, I decided to include GDP for this analysis. I loaded the data into a dataframe and selected the GDP values for the years in which unemployment data is available.  
+
+```{r}
+# We read the real GDP (inflation corrected) in % betweem 1976-2015
+gdp = read.csv("./data/gdp.csv", sep=",",head=TRUE)     
+rownames(gdp)<-as.numeric(gdp$year)
+gdp[1]<-NULL
+gdp<-gdp[years,]
+```
+
+
+## 3.2 Data Processing/Results
+
+Below, I have plotted unemployment and GDP in the same graph.
+
+```{r, echo=FALSE}
+par(mfrow = c(1, 1))
+par(mar=c(5,4,4,4))
+
+Sta<-"Federal"
+x1<-as.numeric(colnames(unem)); 
+y1<-t(unem[Sta,])
+#y1<-predict(loess(t(unem[Sta,])~x1,span=0.40))
+y2<-gdp
+#y2<-predict(loess(y2~x2,span=0.35))
+plot(x1,y1,type="l",lwd=c(2),col=c(2:8), xlab="year", ylab="Unemployment Rate (%)",
+     main = "Unemployment vs GDP (US: 1976-2014)",axes=FALSE)
+axis(1, at = seq(1976, 2016, by = 1),cex=0.7)
+axis(2, at = pretty(range(y1)))
+par(new=T)
+plot(x1,y2, type="l", col="blue", lwd=c(2),axes=FALSE,xlab="",ylab="")
+axis(4, at = pretty(range(y2)), col="blue",col.lab="blue")
+legend("bottomlef", inset=0.01, as.vector(c("Unemployment","GDP (%)")), col=c("red","blue"),
+       lwd=c(2,2), cex=0.7)
+mtext("GDP (%)", side=4, line=2, col="blue")
+cf<-cor(y1,y2)
+legend("topleft", inset=0.01,c(paste("R=",round(cf, digits=2))), col=c("black"),cex=0.7)
+```
+
+There is a negative correlation between GDP and unemployment, which is a well-studied phenomenon. 
+
+To see this effect more clearly, unemployment is plotted versus the inverse of GDP (1/gdp) and in order to prevent the division by zero, a constant GDP is added, which will not change the shape of this variable. 
+
+```{r, echo=FALSE}
+### first plot unemployment vs 1/gdp
+par(mar=c(5,4,4,4))
+y3<-10*(1/(gdp+4))
+plot(x1,y1,type="l",lwd=c(2),col=c(2:8), xlab="year", ylab="Unemployment Rate (%)",
+     main = "Unemployment vs 1/GDP (US: 1976-2014)",axes=FALSE)
+axis(1, at = seq(1976, 2016, by = 1),cex=0.7)
+axis(2, at = pretty(range(y1)))
+par(new=T)
+plot(x1,y3, type="l", col="blue", lwd=c(2),axes=FALSE,xlab="",ylab="")
+axis(4, at = pretty(range(y2)), col="blue",col.lab="blue")
+legend("top", inset=0.01, as.vector(c("Unemployment","1/GDP")), 
+       col=c("red","blue"),lwd=c(2,2), cex=0.7)
+mtext("1/GDP (a.u.)", side=4, line=2, col="blue")
+cf2<-cor(y1,y3)
+legend("topleft", inset=0.01,c(paste("R=",round(cf2, digits=2))), col=c("black"),cex=0.7)
+```
+
+Here, we can see more a more clear correlation between these variables. It is noticeable that there is a time lag of 1-2 years in unemployment changes behind changes GDP. If we the 1/GDP curve is shifted by two years, we observe a significant increase in the correlation factor from 0.02 to 0.54.
+
+
+```{r, echo=FALSE}
+### lower plot
+
+par(mar=c(5,4,4,4))
+x4<-x1[3:26]
+y4<-y3[1:24]
+plot(x1,y1,type="l",lwd=c(2),col=c(2:8), xlab="year", ylab="Unemployment Rate (%)",
+     main = "Unemployment vs 1/GDP (shifted)",axes=FALSE)
+axis(1, at = seq(1976, 2016, by = 1),cex=0.7)
+axis(2, at = pretty(range(y1)))
+par(new=T)
+plot(x4,y4, type="l", col="blue", lwd=c(2),axes=FALSE,xlab="",ylab="")
+axis(4, at = pretty(range(y2)), col="blue",col.lab="blue")
+legend("top", inset=0.01, as.vector(c("Unemployment","1/GDP (shifted 2 yr)")), 
+       col=c("red","blue"),lwd=c(2,2), cex=0.7)
+mtext("1/GDP (a.u.)", side=4, line=2, col="blue")
+cf3<-cor(y1[3:26],y4)
+legend("topleft", inset=0.01,c(paste("R=",round(cf3, digits=2))), col=c("black"),cex=0.7)
+```
+
+The unemployment data can then be normalized with the clear anticorrelation with GDP by dividing by the inverse of the GDP.
+
+```{r}
+unem_corrected<-unem[,3:26]
+for(i in 1:nrow(unem)) {
+  unem_corrected[i,]<-unem_corrected[i,]/y2[1:24]
+}
+```
+
+The corrected federal and state unemployment and minimum wage are plotted and a histogram is generated with the correlation for 44 states.
+
+```{r, echo=FALSE}
+# Let's see if the federal unemployment corrected is correlated with the MW
+par(mfrow = c(1, 2))
+par(mar=c(5,4,4,4))
+Sta<-"Federal"
+
+y3<-t(unem_corrected[Sta,])
+y4<-t(mwage[Sta,3:26])
+matplot(x4,y3, type="l", lwd=c(2),col=c(2), main = "UN & MW (1976-2014)",
+        xlab="year", ylab="Unemployment Rate (u.a.)",axes=FALSE)
+par(new=T)
+plot(x4,y4, type="l", col="blue", lwd=c(2),axes=FALSE,xlab="",ylab="")
+axis(1, at = seq(1976, 2016, by = 1),cex=0.7)
+axis(2, at = seq(0, 10, by = 1))
+axis(4, at = pretty(range(mwage[Sta,])), col="blue",col.lab="blue")
+legend("bottomright", inset=0.01, as.vector(c("Unemployment (cor)","Minimum Wage")), col=c("red","blue"),
+       lwd=c(2,2), cex=0.5)
+mtext("Minimum wage ($)", side=4, line=2, col="blue")
+cf5<-cor(y3,y4)
+legend("topleft", inset=0.01,c(paste("R=",round(cf5, digits=2))), col=c("black"),cex=0.7)
+
+cor_state2<-rep(0, 45)
+for(i in 1:45) {
+  cor_state2[i]<-(cor(as.numeric(unem_corrected[i,]),as.numeric(mwage[i,3:26])))
+}
+
+mean<-summary(cor_state2)[4] 
+barplot(as.numeric(cor_state2),xlab="State #",ylab="Correlation factor", main="Correlation (44 states)")
+abline(h=mean, col="black",lwd=2)
+legend("top", inset=0.01,c(paste("R(Mean)=",round(mean, digits=2))), col=c("black"),cex=0.7)
+
+
+```
+
+After this correction, positive values for all states with a mean around 0.2 can be seen, which suggests that there is some direct correlation between unemployment and minimum wage. This analysis indicates that an increase in minimum wage will result in higher unemployment rates.
+ 
+
+### 3. Conclusions
+
+This analysis is a simplified study of the correlation between the minimum wage and the unemployment, using publicly available data. In this work we have included the GDP as correcting factor to account for economic factors that affect the unemployment. This work requires data with at least quarterly precision to obtain more precise correction factors, which would translate into more reliable outcomes.  
+
+### 4. References
+
+1. http://www.economist.com/blogs/economist-explains/2014/01/economist-explains-11
+2. http://www.slate.com/articles/news_and_politics/politics/2015/04/the_fight_for_15_it_s_a_bad_idea_raising_the_minimum_wage_to_15_would_hurt.html
+3. http://www.huffingtonpost.com/bill-quigley/top-ten-arguments-for-rai_b_6879220.html
+4. http://www.dol.gov/whd/state/stateMinWageHis.htm
+5. http://www.bls.gov/lau/staadata.txt
+6. http://www.multpl.com/us-real-gdp-growth-rate/table/by-year
